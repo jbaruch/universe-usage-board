@@ -219,8 +219,14 @@ def overview(tiles):
             cy = y + 67
             outer_ink = meter_ink(metric, state != 'LIVE')
             inner_ink = meter_ink(secondary, state != 'LIVE')
-            centered('W %d%%  S %d%%' % (round(percentage(metric)), round(percentage(secondary))),
-                     cx, y + 18, MUTED, font.sins)
+            weekly_label = 'W %d%%' % round(percentage(metric))
+            session_label = 'S %d%%' % round(percentage(secondary))
+            screen.font = font.sins
+            weekly_width, _ = screen.measure_text(weekly_label)
+            session_width, _ = screen.measure_text(session_label)
+            label_x = cx - (weekly_width + 8 + session_width) / 2
+            text(weekly_label, label_x, y + 18, outer_ink)
+            text(session_label, label_x + weekly_width + 8, y + 18, inner_ink)
             arc(cx, cy, 29, 34, 100, TRACK)
             arc(cx, cy, 21, 26, 100, TRACK)
             arc(cx, cy, 29, 34, percentage(metric), outer_ink)

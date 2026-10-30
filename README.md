@@ -25,7 +25,7 @@ Displayed percentages are rounded to whole numbers; the color bands use those sa
 
 The six-tile layout shows Claude, Codex, Grok, Copilot, Antigravity Gemini, and Antigravity Claude. It follows the providers enabled in OpenUsage; additional providers/accounts get further pages.
 
-**Claude combines two rings:** weekly on the outside, five-hour session on the inside. The top reset countdown corresponds to the outer ring; the bottom corresponds to the inner ring. Countdown units are `d` days, `h` hours, and `m` minutes: `1.1d` is about 26 hours, and `1h07` is one hour and seven minutes. The small W/S percentage legend identifies weekly/session remaining allowance.
+**Claude combines two rings:** weekly on the outside, five-hour session on the inside. The top reset countdown corresponds to the outer ring; the bottom corresponds to the inner ring. Countdown units are `d` days, `h` hours, and `m` minutes: `1.1d` is about 26 hours, and `1h07` is one hour and seven minutes. The W/S percentage labels identify weekly/session remaining allowance and each match their ring's green, yellow, or red status color.
 
 The badge boots directly into the board, stays at 80% brightness while USB-powered, and sleeps after two seconds without USB power. No Wi-Fi setup, NAS, or firmware flashing is required.
 
