@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+backups/
+previews/
+hardware_check.py
+verification.json
+*.log
+.DS_Store
+.reference/
