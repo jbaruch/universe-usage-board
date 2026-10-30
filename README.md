@@ -35,6 +35,8 @@ The badge boots directly into the board, stays at 80% brightness while USB-power
 - A Mac running OpenUsage, with the providers you want enabled and signed in.
 - A USB-C **data** cable, Python 3.10+, and Git. Examples below use [uv](https://docs.astral.sh/uv/); `python3 -m venv` and pip work too.
 
+**Buy the base hardware:** [Pimoroni Tufty 2350](https://shop.pimoroni.com/en-us/products/tufty-2350?variant=55811986194811). The Universe 2026 badge is a [custom version of this board](https://github.com/badger/home/blob/main/hardware/README.md); this project has been tested on the Universe firmware. Compatibility with the stock retail firmware has not yet been verified.
+
 Tested on the physical Badger 2350 with MicroPython 1.29.0-preview, firmware build 2026-10-13, and OpenUsage 0.7.13-beta.2. Other OpenUsage versions should work if they provide the `openusage.limits.v1` schema; they have not all been tested.
 
 ## Install
