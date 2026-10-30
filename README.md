@@ -3,7 +3,7 @@
 Turn your **GitHub Universe 2026 badge** into an always-on display for your AI coding subscriptions, powered by [OpenUsage](https://github.com/robinebers/openusage) on your Mac.
 
 <p align="center">
-  <img src="docs/badge.jpg" width="400" alt="GitHub Universe 2026 badge running the six-gauge subscription usage dashboard">
+  <img src="docs/badge-live-gauges.jpg" width="400" alt="GitHub Universe 2026 badge running the six-gauge subscription usage dashboard">
 </p>
 
 *The finished board running on a GitHub Universe 2026 badge.*
