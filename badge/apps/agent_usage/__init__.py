@@ -30,6 +30,16 @@ PROVIDER_COLORS = {
     'grok': color.rgb(202, 209, 221), 'copilot': color.rgb(166, 151, 255),
     'antigravity': color.rgb(119, 179, 255),
 }
+PROVIDER_LOGO_ORDER = (
+    'amp', 'antigravity', 'claude', 'codex', 'copilot', 'cursor', 'devin',
+    'grok', 'muse', 'ollama', 'opencode', 'openrouter', 'zai',
+)
+try:
+    logo_sheet = image.load('assets/provider-logos.png').spritesheet(7, 2)
+    provider_logos = {family: logo_sheet.sprite(index % 7, index // 7)
+                      for index, family in enumerate(PROVIDER_LOGO_ORDER)}
+except (OSError, ValueError):
+    provider_logos = {}
 
 poller = select.poll()
 poller.register(sys.stdin, select.POLLIN)
@@ -177,12 +187,12 @@ def gauge_tiles():
             return next((m for key in keys for m in meters if m.get('key') == key), None)
         if card.get('family') == 'claude':
             weekly, session = find('weekly'), find('session')
-            tiles.append((card, weekly or session, session if weekly else None, 'Claude'))
+            tiles.append((card, weekly or session, session if weekly else None, ''))
         elif card.get('family') == 'antigravity':
-            tiles.append((card, find('geminiSession', 'geminiWeekly'), None, 'Agy Gemini'))
-            tiles.append((card, find('nonGeminiSession', 'nonGeminiWeekly'), None, 'Agy Claude'))
+            tiles.append((card, find('geminiSession', 'geminiWeekly'), None, 'Gemini'))
+            tiles.append((card, find('nonGeminiSession', 'nonGeminiWeekly'), None, 'Claude'))
         else:
-            tiles.append((card, meters[0] if meters else None, None, card['name']))
+            tiles.append((card, meters[0] if meters else None, None, ''))
     return tiles
 
 
@@ -197,9 +207,31 @@ def arc(cx, cy, inner, outer, amount, ink):
     screen.shape(gauge_cache[key])
 
 
+def tile_header(card, x, y):
+    family = card.get('family', '')
+    logo = provider_logos.get(family)
+    if logo is None:
+        box(x, y, 16, 16, TRACK)
+        centered(family[:2].upper(), x + 8, y + 3, WHITE, font.sins)
+    else:
+        screen.blit(logo, rect(x, y, 16, 16))
+    provider, _, account = card['name'].partition(' · ')
+    label = account.strip().lstrip('@').partition('@')[0] or provider
+    label_width = 71
+    face = font.nope
+    screen.font = face
+    if screen.measure_text(label)[0] > label_width:
+        face = font.sins
+        screen.font = face
+    if screen.measure_text(label)[0] > label_width:
+        label = short(label, label_width - screen.measure_text('...')[0], face) + '...'
+    _, height = screen.measure_text(label)
+    text(label, x + 21, y + (16 - height) // 2, WHITE, face)
+
+
 def overview(tiles):
     page = selected // 6
-    for index, (card, metric, secondary, label) in enumerate(tiles[page * 6:page * 6 + 6], page * 6):
+    for index, (card, metric, secondary, variant) in enumerate(tiles[page * 6:page * 6 + 6], page * 6):
         slot = index % 6
         x = 4 + (slot % 3) * 105
         y = 22 + (slot // 3) * 105
@@ -210,10 +242,10 @@ def overview(tiles):
             box(x, y + 101, 102, 1, WHITE)
             box(x, y, 1, 102, WHITE)
             box(x + 101, y, 1, 102, WHITE)
-        ink = PROVIDER_COLORS.get(card.get('family'), TEAL)
-        title = short(label, 96, font.nope)
-        centered(title, x + 51, y + 3, ink, font.nope)
+        tile_header(card, x + 5, y + 2)
         cx, cy = x + 51, y + 62
+        if variant:
+            centered(variant, cx, y + 14, MUTED, font.sins)
         state = status(card)
         if secondary is not None and metric is not None and state != 'SIGN IN':
             cy = y + 67
@@ -238,7 +270,7 @@ def overview(tiles):
             centered(compact_duration(session_reset) if session_reset > 0 else '--',
                      cx, cy + 3, WHITE if state == 'LIVE' else MUTED, font.nope)
             if state != 'LIVE':
-                centered('STALE', cx, y + 3, AMBER, font.nope)
+                centered('STALE', cx, cy + 13, AMBER, font.sins)
             continue
         arc(cx, cy, 31, 38, 100, TRACK)
         if state == 'SIGN IN' or metric is None:
@@ -336,11 +368,11 @@ def update():
                 detail = False
             else:
                 detail = True
-                card, metric, secondary, label = tiles[selected]
+                card, metric, _, _ = tiles[selected]
                 metric_page = card['metrics'].index(metric) if metric is not None else 0
         if badge.pressed(BUTTON_LEFT) or badge.pressed(BUTTON_RIGHT):
             selected = (selected + (-1 if badge.pressed(BUTTON_LEFT) else 1)) % len(tiles)
-            card, metric, secondary, label = tiles[selected]
+            card, metric, _, _ = tiles[selected]
             metric_page = card['metrics'].index(metric) if metric is not None else 0
         if detail:
             metrics = tiles[selected][0]['metrics']

@@ -42,6 +42,7 @@ class InstallationTests(unittest.TestCase):
             deploy.deploy(mount, write=True, autostart=True)
             self.assertEqual((mount / 'usage-board-original.py').read_bytes(), original)
             self.assertTrue((mount / 'apps/agent_usage/icon.png').exists())
+            self.assertTrue((mount / 'apps/agent_usage/assets/provider-logos.png').exists())
             self.assertFalse((mount / 'apps/agent_usage/__pycache__').exists())
             deploy.deploy(mount, write=True, autostart=True)
             self.assertEqual((mount / 'usage-board-original.py').read_bytes(), original)

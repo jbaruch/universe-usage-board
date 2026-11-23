@@ -4,6 +4,7 @@ Tested on a physical GitHub Universe 2026 Badger 2350 with MicroPython 1.29.0-pr
 
 - Rendered and inspected actual 320×240 framebuffers for the matrix, enlarged metrics, waiting, and stale states.
 - Checked combined Claude weekly/session rings and separate Antigravity Gemini/Claude resource selection.
+- Captured a 320×240 hardware framebuffer showing provider logos, two distinct Claude usernames, and the separate Antigravity labels with synthetic data.
 - Checked empty/full remaining-allowance endpoints and green/yellow/red boundaries.
 - Injected logical button events on the device to check navigation, detail selection, return to matrix, and launcher exit.
 - Read back the 80% backlight setting.

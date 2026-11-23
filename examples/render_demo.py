@@ -10,19 +10,21 @@ def metric(key, label, used, reset_seconds):
             'unit': 'percent', 'limit': 100, 'reset': AT + reset_seconds}
 
 
-def provider(family, name, metrics):
-    return {'id': family, 'family': family, 'name': name, 'plan': 'Demo',
+def provider(family, name, metrics, account=None):
+    return {'id': family + '@' + account if account else family,
+            'family': family, 'name': name, 'plan': 'Demo',
             'fetched': AT, 'stale': False, 'status': 'LIVE', 'metrics': metrics}
 
 
 demo = {'v': 1, 'at': AT, 'providers': [
-    provider('claude', 'Claude', [metric('weekly', 'Weekly', 84, 97200),
-                                 metric('session', 'Session', 14, 4020)]),
-    provider('codex', 'Codex', [metric('weekly', 'Weekly', 100, 388800)]),
-    provider('grok', 'Grok', [metric('weekly', 'Weekly', 63, 129600)]),
-    provider('copilot', 'Copilot', [metric('premiumCredits', 'Credits', 35, 172800)]),
-    provider('antigravity', 'Antigravity', [metric('geminiSession', 'Gemini session', 25, 8100),
-                                          metric('nonGeminiSession', 'Claude session', 54, 5340)]),
+    provider('claude', 'Claude · alex@work.example', [metric('weekly', 'Weekly', 84, 97200),
+                                                     metric('session', 'Session', 14, 4020)], 'work'),
+    provider('claude', 'Claude · studio@home.example', [metric('weekly', 'Weekly', 28, 172800)], 'personal'),
+    provider('codex', 'ChatGPT · alex@work.example', [metric('weekly', 'Weekly', 100, 388800)], 'work'),
+    provider('copilot', 'Copilot · alex-codes', [metric('premiumCredits', 'Credits', 35, 172800)], 'work'),
+    provider('antigravity', 'Antigravity · alex@work.example', [metric('geminiSession', 'Gemini session', 25, 8100),
+                                                              metric('nonGeminiSession', 'Claude session', 54, 5340)], 'work'),
+    provider('grok', 'Grok · project-user', [metric('weekly', 'Weekly', 63, 129600)], 'work'),
 ]}
 
 

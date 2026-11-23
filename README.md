@@ -6,11 +6,11 @@ Turn your **GitHub Universe 2026 badge** into an always-on display for your AI c
   <img src="docs/badge-live-gauges.jpg" width="400" alt="GitHub Universe 2026 badge running the six-gauge subscription usage dashboard">
 </p>
 
-*The finished board running on a GitHub Universe 2026 badge.*
+*The original gauge layout running on a GitHub Universe 2026 badge.*
 
 ## Reading the board
 
-![Dashboard detail using synthetic demonstration data](docs/dashboard.png)
+![Dashboard grid with provider logos and synthetic account names and usage](docs/dashboard.png)
 
 Every ring shows **allowance remaining**. Full is 100% left; empty means that allowance is exhausted. Purchased credit balances are available in the detail view.
 
@@ -22,6 +22,8 @@ Every ring shows **allowance remaining**. Full is 100% left; empty means that al
 | Gray | Stale, unavailable, or sign-in required |
 
 Displayed percentages are rounded to whole numbers; the color bands use those same rounded values.
+
+Each tile shows the provider logo and the account's username or nickname. When OpenUsage supplies an email address, the grid uses the part before `@`. Accounts without a label show the provider name. The details view shows the account name from OpenUsage.
 
 With one account each for Claude, Codex, Grok, Copilot, and Antigravity, the board shows six gauges, including separate Antigravity Gemini and Claude gauges. Additional accounts can fill more pages.
 
@@ -172,5 +174,7 @@ CI runs these checks without retaining build artifacts. [Validation notes](docs/
 ## Credits and license
 
 Built for the [GitHub Universe badge](https://github.com/badger/home), made with Pimoroni's badge hardware and MicroPython runtime. Usage readings come from [OpenUsage](https://github.com/robinebers/openusage). This is an independent community project.
+
+The provider logo artwork comes from OpenUsage. The marks identify their respective providers. [Source icons](https://github.com/robinebers/openusage/tree/v0.8.1-beta.2/Sources/OpenUsage/Resources/ProviderIcons), [upstream license](badge/apps/agent_usage/assets/LICENSE.openusage).
 
 [MIT License](LICENSE).
