@@ -1,6 +1,11 @@
 import importlib.util
+import json
 from pathlib import Path
+import plistlib
+import subprocess
+import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('bridge', Path(__file__).parents[1] / 'mac/usage_bridge.py')
 bridge = importlib.util.module_from_spec(spec)
@@ -61,6 +66,61 @@ class UsageTests(unittest.TestCase):
                   'providers': {'claude': dict(provider(), token='SECRET')},
                   'errors': [{'providerId': 'claude', 'message': 'auth failed SECRET'}]}
         self.assertNotIn('SECRET', str(bridge.normalize(source, now=self.now)))
+
+
+class SnapshotTests(unittest.TestCase):
+    def test_v2_cli_uses_current_accounts_and_account_order(self):
+        source = {
+            'schema': 'openusage.limits.v2',
+            'providers': {
+                'claude@work': provider(stale=True),
+                'claude@personal': provider(),
+                'cursor@work': provider(),
+            },
+        }
+        settings = {
+            'openusage.enabledProviders.v1': ['claude'],
+            'openusage.layout.v2': json.dumps({
+                'providerOrder': ['cursor@work', 'claude@work', 'claude@personal'],
+            }).encode(),
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            preferences = Path(folder) / 'openusage.plist'
+            preferences.write_bytes(plistlib.dumps(settings))
+            with (patch.object(bridge, 'PREFERENCES', preferences),
+                  patch.object(bridge.urllib.request, 'urlopen', side_effect=OSError),
+                  patch.object(bridge.time, 'time', return_value=UsageTests.now),
+                  patch.object(bridge.subprocess, 'run') as helper):
+                helper.return_value = subprocess.CompletedProcess([bridge.HELPER], 0, json.dumps(source).encode())
+                packet = bridge.snapshot()
+        helper.assert_called_once_with([bridge.HELPER], capture_output=True, timeout=40, check=False)
+        self.assertEqual(packet['v'], 1)
+        cards = packet['providers']
+        self.assertEqual([card['id'] for card in cards], ['cursor@work', 'claude@work', 'claude@personal'])
+        self.assertEqual([card['family'] for card in cards], ['cursor', 'claude', 'claude'])
+        self.assertEqual([card['status'] for card in cards], ['LIVE', 'STALE', 'LIVE'])
+        self.assertEqual(cards[0]['metrics'][0]['pct'], 86)
+
+    def test_v1_http_still_uses_legacy_settings(self):
+        source = {'schema': 'openusage.limits.v1', 'providers': {'claude': provider(), 'grok': provider()}}
+        with tempfile.TemporaryDirectory() as folder:
+            preferences = Path(folder) / 'openusage.plist'
+            preferences.write_bytes(plistlib.dumps({'openusage.enabledProviders.v1': ['grok']}))
+            with (patch.object(bridge, 'PREFERENCES', preferences),
+                  patch.object(bridge.urllib.request, 'urlopen') as http,
+                  patch.object(bridge.subprocess, 'run') as helper):
+                http.return_value.__enter__.return_value.read.return_value = json.dumps(source).encode()
+                packet = bridge.snapshot()
+        helper.assert_not_called()
+        self.assertEqual([card['id'] for card in packet['providers']], ['grok'])
+
+    def test_v2_cli_exit_four_can_return_an_empty_snapshot(self):
+        source = {'schema': 'openusage.limits.v2', 'providers': {}}
+        with (patch.object(bridge, 'preferences', return_value=(None, [])),
+              patch.object(bridge.urllib.request, 'urlopen', side_effect=OSError),
+              patch.object(bridge.subprocess, 'run') as helper):
+            helper.return_value = subprocess.CompletedProcess([bridge.HELPER], 4, json.dumps(source).encode())
+            self.assertEqual(bridge.snapshot()['providers'], [])
 
 
 if __name__ == '__main__':

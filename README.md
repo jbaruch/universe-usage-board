@@ -23,7 +23,7 @@ Every ring shows **allowance remaining**. Full is 100% left; empty means that al
 
 Displayed percentages are rounded to whole numbers; the color bands use those same rounded values.
 
-The six-tile layout shows Claude, Codex, Grok, Copilot, Antigravity Gemini, and Antigravity Claude. It follows the providers enabled in OpenUsage; additional providers/accounts get further pages.
+With one account each for Claude, Codex, Grok, Copilot, and Antigravity, the board shows six gauges, including separate Antigravity Gemini and Claude gauges. Additional accounts can fill more pages.
 
 **Claude combines two rings:** weekly on the outside, five-hour session on the inside. The top reset countdown corresponds to the outer ring; the bottom corresponds to the inner ring. Countdown units are `d` days, `h` hours, and `m` minutes: `1.1d` is about 26 hours, and `1h07` is one hour and seven minutes. The W/S percentage labels identify weekly/session remaining allowance and each match their ring's green, yellow, or red status color.
 
@@ -32,14 +32,16 @@ The badge boots directly into the board, stays at 80% brightness while USB-power
 ## What you need
 
 - A **GitHub Universe 2026 Badger 2350**, running its stock MicroPython firmware. The older Universe 2025/e-ink badges use different APIs and are not supported.
-- A Mac running OpenUsage, with the providers you want enabled and signed in.
+- A Mac running OpenUsage, with the accounts you want to show signed in.
 - A USB-C **data** cable, Python 3.10+, and Git. Examples below use [uv](https://docs.astral.sh/uv/); `python3 -m venv` and pip work too.
 
 **Buy the base hardware:** [Pimoroni Tufty 2350](https://shop.pimoroni.com/en-us/products/tufty-2350?variant=55811986194811). The Universe 2026 badge is a [custom version of this board](https://github.com/badger/home/blob/main/hardware/README.md); this project has been tested on the Universe firmware. Compatibility with the stock retail firmware has not yet been verified.
 
-Tested on the physical Badger 2350 with MicroPython 1.29.0-preview, firmware build 2026-10-13, and OpenUsage 0.7.13-beta.2. Other OpenUsage versions should work if they provide the `openusage.limits.v1` schema; they have not all been tested.
+The badge app was tested on the physical Badger 2350 with MicroPython 1.29.0-preview, firmware build 2026-10-13. The Mac bridge supports OpenUsage 0.8's `openusage.limits.v2` CLI output and OpenUsage 0.7's `openusage.limits.v1` output.
 
 ## Install
+
+**Already installed?** See [Update, restore, uninstall](#update-restore-uninstall).
 
 ### 1. Get the project
 
@@ -84,7 +86,7 @@ The installer preserves the vendor startup in `usage-board-original.py`, backs u
 
 It starts immediately and runs at login. It discovers the Universe 2026 badge by USB vendor/product ID, reconnecting after unplugging or a reset. When several badges are connected, pin one using `--serial-number YOUR_BADGE_SERIAL`.
 
-OpenUsage should remain running to fetch fresh provider data. Within a few seconds the board should show **USB** and your enabled providers. Provider readings follow OpenUsage's refresh schedule; the bridge sends a snapshot once a minute.
+Keep OpenUsage running to fetch fresh readings. After a successful fetch, the board should show **USB** and your accounts within about a minute. The bridge sends a snapshot once a minute.
 
 For foreground use instead of a login agent:
 
@@ -114,15 +116,15 @@ Input and display orientation use the badge's logical controls, including its ca
 ```mermaid
 flowchart LR
     P[Provider usage] --> O[OpenUsage on the Mac]
-    O -->|Loopback JSON or bundled CLI| B[USB bridge]
+    O -->|Bundled CLI or legacy local API| B[USB bridge]
     B -->|Usage summaries over USB| D[Universe 2026 badge]
 ```
 
-The bridge reads `http://127.0.0.1:6736/v1/limits`, with the bundled OpenUsage CLI as fallback. It mirrors enabled providers and their order from OpenUsage's preferences. The versioned USB packets contain usage summaries, plan names, and reset times; provider credentials remain with OpenUsage on the Mac. Nothing is uploaded to this repository or a hosted service.
+With OpenUsage 0.8, the bridge reads the latest cached usage from the bundled CLI and follows the account order from OpenUsage's preferences when available. With 0.7, it reads the legacy `http://127.0.0.1:6736/v1/limits` endpoint with the bundled CLI as a fallback, and follows the enabled providers and their order. The USB packets contain usage summaries, plan names, and reset times. Provider credentials remain with OpenUsage on the Mac.
 
 The bridge waits for the dashboard's handshake before sending. It does not send dashboard packets into the Python REPL or other badge apps. The badge keeps the last received snapshot in RAM; it does not continuously write usage to flash.
 
-A disconnected bridge becomes stale after three minutes. Provider readings also become stale according to their age and OpenUsage's freshness status. Missing or failed readings are not invented as zero usage. If a provider appears as **SIGN IN**, refresh its login through OpenUsage/the provider's normal sign-in flow.
+A disconnected bridge becomes stale after three minutes. Provider readings also become stale according to their age and OpenUsage's freshness status. OpenUsage 0.8 shows account refresh failures in the app. On 0.7, a failed login can appear as **SIGN IN** on the badge.
 
 ## Troubleshooting
 
@@ -131,11 +133,13 @@ A disconnected bridge becomes stale after three minutes. Provider readings also 
 - **Serial port busy:** stop the login helper and any foreground bridge before using `mpremote`, Thonny, or a Web Serial tool. Only one process should own the port.
 - **Stale after the Mac sleeps:** expected; the last reading stays visible until the Mac resumes and sends a fresh snapshot.
 - **App missing from launcher:** check `BADGER/apps/agent_usage/__init__.py`, eject cleanly, and restart.
-- **Wrong OpenUsage location:** the fallback helper expects `/Applications/OpenUsage.app`. The local HTTP API is tried first.
+- **Wrong OpenUsage location:** the bridge expects the bundled CLI inside `/Applications/OpenUsage.app`.
 
 ## Update, restore, uninstall
 
-To update, stop the helper, pull this repo, repeat the badge-copy steps, and run `mac/install_bridge.py` again. Leave the original startup backup in place.
+To update the Mac bridge for OpenUsage 0.8, run `git pull --ff-only` in your checkout and restart the login helper with `launchctl kickstart -k gui/$(id -u)/com.jbaruch.agent-usage-board`. Open **Accounts** in OpenUsage and sign in to any accounts you need to re-add.
+
+To update the app on the badge, stop the helper, pull this repo, repeat the badge-copy steps, and run `mac/install_bridge.py` again. Leave the original startup backup in place.
 
 To restore the stock startup, enter USB Disk Mode and run:
 

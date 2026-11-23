@@ -14,6 +14,9 @@ import urllib.request
 
 PREFERENCES = Path.home() / 'Library/Preferences/com.robinebers.openusage.plist'
 HELPER = '/Applications/OpenUsage.app/Contents/Helpers/openusage'
+LIMITS_V1 = 'openusage.limits.v1'
+LIMITS_V2 = 'openusage.limits.v2'
+MAX_RESPONSE_BYTES = 262144
 PREFIX = '@USAGE1 '
 LABELS = {
     'session': 'Session', 'weekly': 'Weekly', 'premiumCredits': 'Credits',
@@ -39,22 +42,30 @@ def number(value):
     return None
 
 
-def preferences():
+def preferences(schema):
     try:
         with PREFERENCES.open('rb') as handle:
             data = plistlib.load(handle)
-        enabled = data.get('openusage.enabledProviders.v1')
-        order = data.get('openusage.layout.v1.providerOrder', [])
-        if isinstance(order, bytes):
-            order = json.loads(order)
-        return enabled, order
-    except (OSError, ValueError, plistlib.InvalidFileException):
+        if schema == LIMITS_V2:
+            # The CLI already selects current accounts. The v1 enabled list is left over from 0.7.
+            layout = json.loads(data.get('openusage.layout.v2', b'{}'))
+            enabled, order = None, layout.get('providerOrder')
+        else:
+            enabled = data.get('openusage.enabledProviders.v1')
+            order = data.get('openusage.layout.v1.providerOrder')
+            if isinstance(order, bytes):
+                order = json.loads(order)
+    except (OSError, ValueError, TypeError, AttributeError, plistlib.InvalidFileException):
         return None, []
+    if not isinstance(order, list) or not all(isinstance(account, str) for account in order):
+        order = []
+    return enabled if isinstance(enabled, list) else None, order
 
 
 def normalize(source, enabled=None, order=(), now=None):
     now = int(time.time()) if now is None else int(now)
-    if source.get('schema') != 'openusage.limits.v1' or not isinstance(source.get('providers'), dict):
+    if (not isinstance(source, dict) or source.get('schema') not in (LIMITS_V1, LIMITS_V2)
+            or not isinstance(source.get('providers'), dict)):
         raise ValueError('Unsupported OpenUsage data')
     errors = {item.get('providerId'): item.get('message', '') for item in source.get('errors', [])}
     cards = []
@@ -100,24 +111,27 @@ def normalize(source, enabled=None, order=(), now=None):
             'status': 'SIGN IN' if auth else ('STALE' if stale else ('ERROR' if message else 'LIVE')),
             'metrics': metrics[:12],
         })
-    cards.sort(key=lambda card: (order.index(card['family']) if card['family'] in order else 999, card['id']))
+    positions = {account: index for index, account in enumerate(order)}
+    cards.sort(key=lambda card: (positions.get(card['id'], positions.get(card['family'], len(positions))),
+                                 card['id']))
     return {'v': 1, 'at': now, 'providers': cards[:12]}
+
+
+def read_snapshot(raw):
+    if len(raw) > MAX_RESPONSE_BYTES:
+        raise ValueError('OpenUsage response too large')
+    source = json.loads(raw)
+    schema = source.get('schema') if isinstance(source, dict) else None
+    return normalize(source, *preferences(schema))
 
 
 def snapshot():
     try:
         with urllib.request.urlopen('http://127.0.0.1:6736/v1/limits', timeout=8) as response:
-            raw = response.read(262145)
-            if len(raw) > 262144:
-                raise ValueError('OpenUsage response too large')
-            source = json.loads(raw)
+            return read_snapshot(response.read(MAX_RESPONSE_BYTES + 1))
     except (OSError, ValueError):
         result = subprocess.run([HELPER], capture_output=True, timeout=40, check=False)
-        if len(result.stdout) > 262144:
-            raise ValueError('OpenUsage response too large')
-        source = json.loads(result.stdout)
-    enabled, order = preferences()
-    return normalize(source, enabled, order)
+    return read_snapshot(result.stdout)
 
 
 def badge_port(serial_number=None):

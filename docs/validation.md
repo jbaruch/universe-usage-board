@@ -8,6 +8,7 @@ Tested on a physical GitHub Universe 2026 Badger 2350 with MicroPython 1.29.0-pr
 - Injected logical button events on the device to check navigation, detail selection, return to matrix, and launcher exit.
 - Read back the 80% backlight setting.
 - Rebooted into the installed startup app and verified live USB READY/ACK updates from the Mac helper.
+- Verified that the updated bridge reads all six accounts from OpenUsage 0.8.1-beta.2 in dashboard order and receives a USB acknowledgement from the badge.
 - Static app validation passed using the official Universe 2026 skill.
 
 The automated suite checks normalization, missing/error/stale readings, provider filtering/order, multiple accounts, balance semantics, invalid numeric values, credential-field exclusion, portable helper configuration, and deployment/backup/restore guards.
