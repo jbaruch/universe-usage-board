@@ -125,13 +125,16 @@ def read_snapshot(raw):
     return normalize(source, *preferences(schema))
 
 
-def snapshot():
+def snapshot(last_provider=None):
     try:
         with urllib.request.urlopen('http://127.0.0.1:6736/v1/limits', timeout=8) as response:
-            return read_snapshot(response.read(MAX_RESPONSE_BYTES + 1))
+            payload = read_snapshot(response.read(MAX_RESPONSE_BYTES + 1))
     except (OSError, ValueError):
         result = subprocess.run([HELPER], capture_output=True, timeout=40, check=False)
-    return read_snapshot(result.stdout)
+        payload = read_snapshot(result.stdout)
+    if last_provider:
+        payload['providers'].sort(key=lambda card: last_provider in (card['family'], card['id']))
+    return payload
 
 
 def badge_port(serial_number=None):
@@ -141,7 +144,7 @@ def badge_port(serial_number=None):
                  and (not serial_number or port.serial_number == serial_number)), None)
 
 
-def serve(serial_number=None):
+def serve(serial_number=None, last_provider=None):
     import serial
     while True:
         port = badge_port(serial_number)
@@ -179,7 +182,7 @@ def serve(serial_number=None):
                         ready = False
                     if ready and time.monotonic() - sent >= 60:
                         try:
-                            payload = snapshot()
+                            payload = snapshot(last_provider)
                             packet = PREFIX + json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n'
                             if len(packet) > 16384:
                                 raise ValueError('Badge packet too large')
@@ -199,12 +202,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--snapshot', action='store_true')
     parser.add_argument('--serial-number')
+    parser.add_argument('--last-provider', help='Move a provider family or OpenUsage account ID to the end')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
     if args.snapshot:
-        print(json.dumps(snapshot(), indent=2))
+        print(json.dumps(snapshot(args.last_provider), indent=2))
     else:
-        serve(args.serial_number)
+        serve(args.serial_number, args.last_provider)
 
 
 if __name__ == '__main__':

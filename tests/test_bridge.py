@@ -69,6 +69,16 @@ class UsageTests(unittest.TestCase):
 
 
 class SnapshotTests(unittest.TestCase):
+    def test_last_provider_moves_matching_accounts_and_keeps_other_order(self):
+        families = ['claude', 'copilot', 'grok', 'antigravity', 'copilot']
+        cards = [{'id': '%s@%d' % (family, index), 'family': family}
+                 for index, family in enumerate(families)]
+        with (patch.object(bridge.urllib.request, 'urlopen'),
+              patch.object(bridge, 'read_snapshot', return_value={'providers': cards})):
+            packet = bridge.snapshot(last_provider='copilot')
+        self.assertEqual([card['id'] for card in packet['providers']],
+                         ['claude@0', 'grok@2', 'antigravity@3', 'copilot@1', 'copilot@4'])
+
     def test_v2_cli_uses_current_accounts_and_account_order(self):
         source = {
             'schema': 'openusage.limits.v2',

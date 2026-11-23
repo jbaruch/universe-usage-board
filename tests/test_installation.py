@@ -24,6 +24,10 @@ class InstallationTests(unittest.TestCase):
         pinned = installer.make_config(Path('/project'), Path('/user'), 'TEST-BADGE')
         self.assertEqual(pinned['ProgramArguments'][-2:], ['--serial-number', 'TEST-BADGE'])
 
+    def test_helper_can_move_a_provider_to_the_end(self):
+        config = installer.make_config(Path('/project'), Path('/user'), last_provider='copilot')
+        self.assertEqual(config['ProgramArguments'][-2:], ['--last-provider', 'copilot'])
+
     def test_deployment_preview_does_not_write(self):
         with tempfile.TemporaryDirectory() as temporary:
             mount = Path(temporary)

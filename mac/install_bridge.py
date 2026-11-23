@@ -10,10 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 LABEL = 'com.jbaruch.agent-usage-board'
 
 
-def make_config(root, home, serial_number=None):
+def make_config(root, home, serial_number=None, last_provider=None):
     arguments = [str(root / '.venv/bin/python'), '-u', str(root / 'mac/usage_bridge.py')]
     if serial_number:
         arguments += ['--serial-number', serial_number]
+    if last_provider:
+        arguments += ['--last-provider', last_provider]
     log = str(home / 'Library/Logs/AgentUsageBoard/bridge.log')
     return {
         'Label': LABEL, 'ProgramArguments': arguments,
@@ -26,12 +28,13 @@ def make_config(root, home, serial_number=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--serial-number', help='Optional: pin to one badge when several are connected')
+    parser.add_argument('--last-provider', help='Move a provider family or OpenUsage account ID to the end')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('The login helper requires macOS.')
     home = Path.home()
     plist = home / 'Library/LaunchAgents' / (LABEL + '.plist')
-    config = make_config(ROOT, home, args.serial_number)
+    config = make_config(ROOT, home, args.serial_number, args.last_provider)
     if not Path(config['ProgramArguments'][0]).exists():
         parser.error('Create .venv and install requirements.txt first.')
     target = 'gui/%d' % os.getuid()

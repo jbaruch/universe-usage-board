@@ -88,6 +88,8 @@ The installer preserves the vendor startup in `usage-board-original.py`, backs u
 
 It starts immediately and runs at login. It discovers the Universe 2026 badge by USB vendor/product ID, reconnecting after unplugging or a reset. When several badges are connected, pin one using `--serial-number YOUR_BADGE_SERIAL`.
 
+To move a provider to the end of the badge's tile order, pass `--last-provider` when installing the helper. For example, `.venv/bin/python mac/install_bridge.py --last-provider copilot` keeps Copilot after the other providers.
+
 Keep OpenUsage running to fetch fresh readings. After a successful fetch, the board should show **USB** and your accounts within about a minute. The bridge sends a snapshot once a minute.
 
 For foreground use instead of a login agent:
